@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sulfur Value Chain</title>
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
 :root{
   --bg:#E8E9DF; --panel:#E8E9DF; --tipbg:#FFFFFF; --ink:#49463E; --ink2:#525455; --ink3:#525455;
@@ -600,6 +601,7 @@ $('foot').innerHTML=['src','s','ox','red','salt','by'].map(k=>`<span><i class="s
   +'<span><i class="lg-by"></i>Saleable by-product</span><span><i class="lg-dash"></i>Spent acid returned</span><span class="hint">Scroll to zoom · drag to pan · hover to trace · click a step to isolate its chain · Esc to reset</span>';
 let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(G)hl(null);},100);});
 redraw();
+if(window.Office&&Office.onReady)Office.onReady(()=>{});
 </script>
 </body>
 </html>
