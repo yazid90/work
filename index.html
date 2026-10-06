@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sulfur Value Chain</title>
+<style>
+:root{
+  --bg:#E8E9DF; --panel:#E8E9DF; --tipbg:#FFFFFF; --ink:#49463E; --ink2:#525455; --ink3:#525455;
+  --line2:#9D9F9D; --ring:#0D6D2B;
+  --f-src:#9D9F9D; --f-mkt:#9D9F9D; --f-s:#A3BB50; --f-ox:#0D6D2B; --f-red:#525455; --f-salt:#66AD38; --f-by:#49463E; --f-waste:#9D9F9D;
+  --sans:"Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --cond:"IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", Arial, sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:13px/1.4 var(--sans);display:flex;flex-direction:column;overflow:hidden}
+#cwrap{position:relative;flex:1;min-height:0}
+#sk{position:absolute;inset:0;width:100%;height:100%;display:block}
+.colh{font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;fill:var(--ink3)}
+.lk{fill:none;stroke-opacity:.5;transition:stroke-opacity .12s}
+.lk.dash{stroke-dasharray:6 3}
+.nd{cursor:pointer;outline:none}
+.nd:focus-visible rect.bar{stroke:var(--ring);stroke-width:2}
+.lbl{font:400 11.5px var(--cond);fill:var(--ink);paint-order:stroke;stroke:var(--panel);stroke-width:3.2px;stroke-linejoin:round;pointer-events:none}
+.lbl.hub{font-weight:600;font-size:12.5px}
+svg.dim .lk{stroke-opacity:.06}
+svg.dim .lk.on{stroke-opacity:.9}
+svg.dim .nd{opacity:.22}
+svg.dim .nd.on{opacity:1}
+.ring{fill:none;stroke:var(--ink);stroke-width:1.5}
+.tip{position:absolute;pointer-events:none;background:var(--tipbg);border:1px solid var(--line2);border-radius:6px;padding:6px 9px;font-size:12.5px;line-height:1.35;max-width:280px;z-index:3;box-shadow:0 4px 14px rgba(73,70,62,.18)}
+.tip .t{font-weight:600}
+.tip .d{color:var(--ink2)}
+.tools{position:absolute;top:8px;right:10px;z-index:2;display:flex;gap:6px}
+.tools button{border:1px solid var(--line2);background:var(--tipbg);color:var(--ink);border-radius:6px;padding:4px 10px;font:500 13px var(--sans);cursor:pointer;min-width:30px}
+.tools button:hover{border-color:var(--ink2)}
+.tools button:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+#sk{touch-action:none}
+#sk.zoomed{cursor:grab}
+#sk.panning{cursor:grabbing}
+.foot{display:flex;flex-wrap:wrap;gap:3px 14px;align-items:center;padding:4px 12px 7px;font-size:11.5px;color:var(--ink2)}
+.foot span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.lg-by{width:16px;height:0;border-top:3px solid var(--f-by);display:inline-block}
+.lg-dash{width:16px;height:0;border-top:3px dashed var(--f-by);display:inline-block}
+.hint{margin-left:auto;color:var(--ink3)}
+@media (prefers-reduced-motion:reduce){.lk{transition:none}}
+</style>
+</head>
+<body>
+<div id="cwrap">
+  <svg id="sk" role="img" aria-label="Sulfur value chain from sources to end markets"></svg>
+  <div class="tip" id="tip" hidden></div>
+  <div class="tools">
+    <button id="back" type="button" hidden>Show full chain</button>
+    <button id="zin" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+    <button id="zout" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+    <button id="zfit" type="button" title="Fit to window">Fit</button>
+  </div>
+</div>
+<div class="foot" id="foot"></div>
+<script>
+const DATA = {
+nodes: [
+// stage 0 — sources
+['sg','Sour gas processing',0,'src','H2S is stripped from sour natural gas and converted to sulfur in Claus and tail-gas units. The largest single source. Output follows gas production, not sulfur demand.',{x:'Sales gas and NGLs'}],
+['rf','Oil refining and upgrading',0,'src','Hydrotreating removes sulfur to meet low-sulfur fuel specs such as IMO 2020. The H2S mostly goes to Claus units; a small stream is used directly to make thiochemicals.',{x:'Low-sulfur fuels'}],
+['mn','Mined and Frasch sulfur',0,'src','Native and volcanic deposits and the legacy Frasch process. Now a small share of supply.'],
+['sm','Smelter off-gas',0,'src','SO2 captured when copper, zinc, lead and nickel sulfide concentrates are smelted, sent straight to acid plants. This acid is made whether or not anyone needs it, so it often sets regional acid prices.',{x:'Copper, zinc, lead and nickel metal'}],
+['py','Pyrite roasting',0,'src','Iron pyrite (FeS2) roasted to SO2 for acid, mainly in China.',{x:'Iron oxide cinder'}],
+['spsrc','Spent acid, recycled ↺',0,'by','Spent acid collected from alkylation, nitration, MMA, TiO2, chlorine drying and fine chemicals. Most goes to regeneration furnaces (SAR); some is reused directly in fertilizer plants. It is the same sulfur that leaves through "Spent acid returned" on the right: a Sankey cannot draw a loop, so the loop is shown at both ends.'],
+// stage 1
+['es','Elemental sulfur',1,'s','Traded molten or as prills, granules and lumps. Nearly 90% is burned to SO2 for sulfuric acid. The rest is used directly or made into H2S, CS2, P2S5, sulfur chlorides and thiosulfates.',{f:[1,'S']}],
+['sar','Spent acid regeneration',1,'ox','Spent acid is decomposed at about 1,000 °C back to SO2, cleaned and converted to fresh acid. Common next to refinery alkylation units and MMA plants.'],
+// stage 2
+['so2','Sulfur dioxide (SO2)',2,'ox','Made by burning sulfur, roasting sulfide ores and pyrite, or decomposing spent acid. About 98% goes on to SO3. The rest becomes sulfites, bisulfites, dithionite, thiosulfates, pulping liquor or liquid SO2.',{f:[2.0,'SO2']}],
+['h2s','Hydrogen sulfide (H2S)',2,'red','Made by hydrogenating molten sulfur, or taken directly from refinery and gas-plant streams. Feedstock for methyl mercaptan, NaHS and other mercaptans.',{f:[1.06,'H2S']}],
+['cs2','Carbon disulfide (CS2)',2,'red','Sulfur vapour reacted with methane. Values are net use: viscose plants recover and recycle much of their CS2.',{f:[1.19,'CS2']}],
+['p2s5','Phosphorus pentasulfide',2,'red','White phosphorus reacted with molten sulfur. Made into ZDDP lube additives, dithiophosphate pesticides and flotation collectors.',{f:[1.39,'P2S5']}],
+['scl','Sulfur chlorides',2,'red','Chlorine reacted with molten sulfur (S2Cl2, SCl2). Feed for thionyl chloride, sulfurized EP lubricant additives and rubber vulcanizing agents.'],
+['direct','Direct elemental use',2,'s','Sulfur ground, prilled, emulsified or blended and sold as elemental sulfur.'],
+// stage 3
+['so3','Sulfur trioxide (SO3)',3,'ox','SO2 oxidized over vanadium pentoxide catalyst in the converter of a contact acid plant. Almost all is absorbed into acid at once; a small share is used as SO3 gas for sulfonation and chlorosulfonic acid.',{f:[2.5,'SO3']}],
+['mesh','Methyl mercaptan (MeSH)',3,'red','Methanol reacted with H2S. This is the sulfur source for methionine: MeSH plus acrolein gives MMP, the methionine backbone. Also the precursor of DMDS, methanesulfonic acid and methomyl.',{f:[1.5,'CH3SH']}],
+['nahs','NaHS and sodium sulfide',3,'red','H2S absorbed in caustic soda. Used for copper–moly flotation, hide dehairing, kraft liquor, sulfur dyes and PPS resin. In China much Na2S is also made by reducing sodium sulfate with coal.',{f:[1.75,'NaHS']}],
+['merc','Other mercaptans and sulfides',3,'red','TBM and ethyl mercaptan (gas odorants), NDM and TDM chain-transfer agents for SBR and ABS, thioglycolic acid (PVC tin stabilizers, hair perms), DMS and DMSO.'],
+['socl2','Thionyl chloride',3,'red','Chlorinating agent for pharmaceuticals and agrochemical actives, and the electrolyte in lithium–thionyl chloride batteries. Most of its sulfur leaves as SO2 off-gas.',{f:[3.71,'SOCl2']}],
+// stage 4
+['acid','Sulfuric acid and oleum',4,'ox','SO3 absorbed in 98% acid; oleum carries extra dissolved SO3. The hub of the chain: about half goes to phosphate fertilizer, then metal leaching and chemicals. Includes acid made from regenerated spent acid.',{f:[3.06,'H2SO4 (100%)']}],
+['so3s','SO3 sulfonation',4,'ox','Falling-film reactors sulfonate alkylbenzene (LAS), alpha olefins (AOS) and methyl esters (MES), and sulfate fatty alcohol ethoxylates (SLES). The sulfur stays in the surfactant.'],
+['csa','Chlorosulfonic, sulfamic acid',4,'ox','SO3 plus HCl gives chlorosulfonic acid, used for sulfa drugs, sulfonylurea herbicides and sweeteners such as acesulfame. SO3 plus urea gives sulfamic acid for descalers and cleaners.'],
+['dmds','Dimethyl disulfide (DMDS)',4,'red','Made from MeSH and sulfur. Presulfides hydrotreating catalysts, limits coking in steam crackers and is used as a soil fumigant. DMDS can be hydrogenated back to MeSH, so a small amount reaches methionine plants as an easier-to-ship MeSH carrier.',{f:[1.47,'C2H6S2']}],
+// stage 5 — consuming processes
+['wpa','Phosphoric acid (wet process)',5,'ox','Phosphate rock digested with sulfuric acid, giving phosphoric acid and gypsum. The acid’s sulfur is counted against the phosphate products it makes possible.',{x:'Phosphoric acid; fluorosilicic acid (FSA) for wet-route AlF3 and water fluoridation'}],
+['ssp','Single superphosphate',5,'ox','Rock phosphate acidulated with sulfuric acid. The gypsum stays in the product, so SSP delivers 11–12% sulfur to the crop.'],
+['sop','SOP, Mannheim process',5,'salt','2 KCl + H2SO4 → K2SO4 + 2 HCl in Mannheim furnaces. Chloride-free potash for fruit, vegetables and tobacco. About half of world SOP is made this way; brine and mineral SOP is outside this chart.',{f:[5.43,'K2SO4'],x:'Hydrochloric acid, about 1.2 t of 33% HCl per t SOP'}],
+['cu','Copper heap leach (SX-EW)',5,'ox','Acid leaches oxide copper ore; solvent extraction and electrowinning recover cathode. Electrowinning regenerates the acid, so net use is the acid eaten by gangue, which stays in the heap as sulfate salts.',{x:'Copper cathode',drv:{mining:1}}],
+['hpal','Nickel-cobalt HPAL',5,'ox','High-pressure acid leaching of laterite ore, expanding fast in Indonesia. Acid use is about 0.3 t per t ore; the sulfur ends as gypsum and magnesium sulfate in tailings. The MHP product feeds battery-grade nickel sulfate.',{x:'Mixed hydroxide precipitate (MHP)',drv:{batt:0.7,steel:0.3}}],
+['u','Uranium leaching',5,'ox','Acid in-situ recovery and tank leaching of uranium ore.',{x:'Uranium oxide concentrate',drv:{power:1}}],
+['znh','Zinc, gold, other hydromet',5,'ox','Make-up acid for zinc roast-leach-electrowin circuits, gold pressure oxidation, vanadium and other leaching. The sulfur ends in jarosite, goethite and neutralization residues.',{x:'Zinc, gold and vanadium',drv:{mining:1}}],
+['ree','Rare earth acid cracking',5,'ox','Concentrated-acid roasting of bastnäsite and monazite, mainly in China. Feeds NdFeB magnets for EV motors, wind turbines and electronics.',{x:'Rare earth oxides',drv:{auto:0.45,elec:0.3,power:0.25}}],
+['li','Lithium sulfate route',5,'ox','Spodumene is acid-roasted to lithium sulfate, leached and converted to lithium hydroxide or carbonate with caustic soda or soda ash. Sodium sulfate (Glauber’s salt) is the by-product.',{x:'Lithium hydroxide or carbonate',drv:{batt:0.9,glass:0.1}}],
+['pick','Steel pickling',5,'ox','Acid removes mill scale from hot-rolled steel; HCl has taken much of this market. Spent pickle liquor is crystallized to ferrous sulfate.',{x:'Pickled steel strip',drv:{steel:1}}],
+['bms','Battery sulfate refining',5,'ox','MHP, matte, recycled black mass and manganese ore dissolved in acid and crystallized to battery-grade nickel, cobalt and manganese sulfates. Ammonia-based nickel refining yields ammonium sulfate.'],
+['capro','Caprolactam',5,'ox','Hydroxylamine sulfate oximation plus oleum in the Beckmann rearrangement, neutralized with ammonia. Essentially all the sulfur leaves as ammonium sulfate, about 1.5–4.5 t per t caprolactam depending on the process.',{x:'Caprolactam for nylon 6 (contains no sulfur)',drv:{textiles:0.5,plastics:0.35,auto:0.15}}],
+['hf','Hydrofluoric acid',5,'ox','CaF2 + H2SO4 → 2 HF + CaSO4 in rotary kilns, using about 2.6 t of acid per t HF. HF goes on to refrigerants, fluoropolymers, AlF3, LiPF6 and HF alkylation.',{x:'Hydrogen fluoride',drv:{fluoro:0.6,alu:0.15,batt:0.07,oil:0.06,elec:0.05,steel:0.04,glass:0.03}}],
+['alky','Refinery alkylation',5,'ox','Acid catalyzes isobutane–olefin alkylation to high-octane alkylate. The acid degrades rather than reacting; about 90% returns as spent acid for regeneration. Shown as gross circulation.',{x:'Alkylate',drv:{oil:1}}],
+['nitr','Nitration',5,'ox','Mixed nitric–sulfuric acid nitrates benzene (to aniline and MDI), toluene (TDI), and cellulose, glycerine and toluene for explosives. The sulfuric acid is a dehydrating agent and is reconcentrated or regenerated.',{x:'Nitrobenzene, DNT, nitrocellulose and nitro explosives',drv:{plastics:0.5,defense:0.3,constr:0.2}}],
+['mma','Methyl methacrylate (ACH)',5,'ox','Acetone cyanohydrin is treated with oleum, then esterified with methanol. The ammonium bisulfate and acid residue is regenerated or converted to ammonium sulfate.',{x:'MMA for PMMA and acrylics',drv:{plastics:0.55,paints:0.3,elec:0.15}}],
+['an','Acrylonitrile',5,'ox','In the SOHIO process, unreacted ammonia in the reactor effluent is quenched with sulfuric acid, giving ammonium sulfate.',{x:'Acrylonitrile for ABS, acrylic fibre, NBR and carbon fibre',drv:{plastics:0.5,textiles:0.35,auto:0.15}}],
+['coke','Coke-oven gas cleaning',5,'ox','Ammonia in coke-oven gas is scrubbed with acid in saturators, producing ammonium sulfate. Tied to blast-furnace steel output.',{x:'Metallurgical coke and coke-oven gas',drv:{steel:1}}],
+['meth','Methionine',5,'red','MeSH supplies the sulfur atom that stays in the amino acid (21% S). The MHA (hydroxy-analogue) route hydrolyzes the nitrile with sulfuric acid and gives ammonium sulfate as a by-product. The hydantoin route used for most DL-methionine does not.',{f:[4.65,'C5H11NO2S']}],
+['tio2','TiO2 pigment, sulfate route',5,'ox','Ilmenite or slag digested in concentrated acid, about 3.5–4 t per t TiO2. Yields ferrous sulfate (copperas) and weak spent acid, which is reconcentrated or neutralized to gypsum.',{x:'Titanium dioxide pigment',drv:{paints:0.6,plastics:0.27,paper:0.08,home:0.05}}],
+['clad','Chlorine drying',5,'ox','Wet chlorine from chlor-alkali cells is dried with 96–98% acid. The diluted acid (70–78%) is sold or reused.',{x:'Dry chlorine',drv:{plastics:0.5,water:0.25,pharmaM:0.25}}],
+['visc','Viscose and cellophane',5,'ox','Cellulose is xanthated with CS2 and regenerated in a spin bath of sulfuric acid, sodium sulfate and zinc sulfate. The spin-bath bleed is crystallized to sodium sulfate; CS2 and H2S are partly recovered.',{x:'Viscose staple fibre, filament and cellophane',drv:{textiles:0.85,home:0.1,paper:0.05}}],
+['sulfa','Oleum sulfonation',5,'ox','Oleum and acid sulfonate naphthalene for SNF concrete superplasticizers, dye intermediates such as H-acid, and styrene beads for ion-exchange resins.'],
+['pulp','Pulp mill acid',5,'ox','Acid for chlorine dioxide generators, tall-oil recovery and pH control at kraft mills. ClO2 generators return sodium sesquisulfate, reused as kraft make-up.'],
+['sulfp','Sulfite pulping liquor',5,'salt','SO2 absorbed in calcium, magnesium or ammonium base to make bisulfite cooking liquor. The spent liquor yields lignosulfonates.'],
+['ph','pH control, acid treatment',5,'ox','Direct acid use for water and effluent pH control, sugar refining, ion-exchange regeneration and pickling hides.'],
+['lead','Lead-acid electrolyte',5,'ox','Battery acid for starter and standby batteries. At end of life the electrolyte and lead sulfate paste are recovered, mostly as sodium sulfate or regenerated acid.'],
+['egr','Electronic-grade acid',5,'ox','Ultra-pure acid for wafer cleaning (SPM) and etching.'],
+['fine','Pharma, dyes, fine chemicals',5,'ox','Acid and oleum in drug synthesis (sulfonation, dehydration, salt formation), dye manufacture and agrochemical actives.'],
+['ferm','Lysine sulfate fermentation',5,'ox','Acid for pH control and as the counter-ion in feed-grade lysine sulfate. The sulfur stays in the product.'],
+// stage 6 — products and by-products
+['map','MAP, DAP, TSP and NPK',6,'ox','Granular phosphate fertilizers made from phosphoric acid. The sulfur shown is the acid used to make that phosphoric acid; the fertilizer itself carries little sulfur unless S-enhanced grades add elemental sulfur.'],
+['feedp','Feed phosphates',6,'ox','Dicalcium and monocalcium phosphate (DCP, MCP) for livestock and poultry.'],
+['ppa','Purified phosphoric acid',6,'ox','Solvent-extracted acid for LFP cathode precursors, food and beverages, metal treatment and electronics etching.'],
+['as','Ammonium sulfate',6,'salt','21% N and 24% S fertilizer. Most supply is a by-product of caprolactam, coke ovens, acrylonitrile, MMA, methionine and nickel refining. A smaller share is made by neutralizing acid with ammonia.',{f:[4.12,'(NH4)2SO4']}],
+['feso4','Ferrous sulfate',6,'salt','Copperas from the TiO2 sulfate route and steel pickling. Reduces chromium(VI) in cement, treats water (directly or as ferric sulfate), makes iron oxide pigments and supplies iron in feed and fertilizer.',{f:[8.67,'FeSO4·7H2O']}],
+['na2so4','Sodium sulfate',6,'salt','By-product of viscose spin baths, lithium hydroxide, ClO2 generators, battery recycling and chromium chemicals. Detergent powder filler, glass refining agent, kraft make-up and textile dyeing aid. Natural mirabilite and thenardite are outside this chart.',{f:[4.43,'Na2SO4']}],
+['alum','Aluminium sulfate',6,'salt','Bauxite or aluminium hydroxide dissolved in acid. The most common drinking-water coagulant; also paper sizing.',{f:[6.18,'Al2(SO4)3·14H2O']}],
+['ferric','Ferric sulfate',6,'salt','Coagulant for drinking water and wastewater, and for phosphorus removal.',{f:[4.16,'Fe2(SO4)3']}],
+['cuso4','Copper sulfate',6,'salt','Bordeaux mixture and other fungicides, feed supplement, flotation activator and electroplating.',{f:[7.79,'CuSO4·5H2O']}],
+['znso4','Zinc sulfate',6,'salt','Zinc micronutrient for crops and feed, viscose spin-bath make-up and flotation depressant.',{f:[5.6,'ZnSO4·H2O']}],
+['niso4','Nickel sulfate',6,'salt','Battery grade for NCM and NCA cathode precursors; also electroplating.',{f:[8.2,'NiSO4·6H2O']}],
+['coso4','Cobalt sulfate',6,'salt','Battery grade for NCM and NCA cathode precursors.',{f:[8.77,'CoSO4·7H2O']}],
+['mnso4','Manganese sulfate',6,'salt','High-purity grade for NCM and LMFP cathodes; agricultural grade as a micronutrient and feed additive.',{f:[5.27,'MnSO4·H2O']}],
+['mgso4','Magnesium sulfate',6,'salt','Synthetic Epsom salt from magnesia and acid; natural kieserite is outside this chart. Fertilizer, pharma and bath salts.',{f:[7.69,'MgSO4·7H2O']}],
+['crso4','Basic chromium sulfate',6,'salt','The standard chrome tanning agent for leather.',{f:[5.15,'Cr(OH)SO4']}],
+['baso4','Barium sulfate (blanc fixe)',6,'salt','Precipitated filler for powder coatings, paints and plastics. Natural barite is outside this chart.',{f:[7.28,'BaSO4']}],
+['nasulf','Sodium sulfite',6,'salt','Oxygen scavenger for boiler water and an NSSC pulping chemical.',{f:[3.93,'Na2SO3']}],
+['nabis','Sodium bisulfite and MBS',6,'salt','Sodium bisulfite and sodium metabisulfite (MBS). Food and beverage preservative, dechlorination, cyanide destruction in gold tailings, antichlor in textiles, leather processing and pharma antioxidant.',{f:[2.96,'Na2S2O5']}],
+['kmbs','Potassium metabisulfite',6,'salt','Preservative and antioxidant for wine, beer and fruit.',{f:[3.47,'K2S2O5']}],
+['nh4bis','Ammonium bisulfite',6,'salt','Oxygen scavenger for oilfield injection water and boilers; pulping liquor base.',{f:[3.09,'NH4HSO3']}],
+['dithio','Sodium dithionite',6,'salt','Also called hydrosulfite. Reducing agent for indigo and vat dyeing of denim, and for brightening mechanical pulp and kaolin.',{f:[2.72,'Na2S2O4']}],
+['ats','Ammonium thiosulfate (ATS)',6,'salt','Liquid 12-0-0-26S fertilizer, often blended with UAN. Made from SO2, ammonia and elemental sulfur.',{f:[2.31,'(NH4)2S2O3']}],
+['kts','K and Ca thiosulfate',6,'salt','Potassium and calcium thiosulfate: liquid K–S and Ca–S fertilizers for fertigation.'],
+['nats','Sodium thiosulfate',6,'salt','Dechlorination, non-cyanide gold leaching and cyanide antidote.',{f:[3.87,'Na2S2O3·5H2O']}],
+['lso2','Liquid SO2',6,'ox','Sugar juice clarification, wine preservation, cyanide destruction (SO2/air process), dechlorination, refinery solvent and sulfolane production.',{f:[2.0,'SO2']}],
+['xan','Xanthates',6,'red','Sodium and potassium alkyl xanthates (SIPX, PAX), the main collectors in sulfide-ore flotation.'],
+['dtc','Dithiocarbamates and MBT',6,'red','Rubber vulcanization accelerators (MBT, TMTD, CBS), fungicides such as mancozeb, and the soil fumigant metam sodium.'],
+['zddp','ZDDP lube additives',6,'red','Zinc dialkyldithiophosphates, the anti-wear and antioxidant additive in engine and hydraulic oils.'],
+['dtp','Dithiophosphates',6,'red','Organophosphate insecticides such as malathion and dimethoate, and dithiophosphate flotation collectors.'],
+['pps','PPS resin',6,'red','Polyphenylene sulfide, a high-temperature engineering plastic made from p-dichlorobenzene and sodium sulfide. Used in car parts, electrical connectors and filter fabrics.',{f:[3.37,'(C6H4S)n']}],
+['meshd','MSA and methomyl',6,'red','Methanesulfonic acid (tin electroplating, pharma synthesis) and methylthio agrochemicals such as methomyl.'],
+['sfert','Sulfur bentonite fertilizers',6,'s','Sulfur–bentonite pastilles, sulfur-coated urea and phosphates with micronized sulfur. Soil bacteria oxidize it to plant-available sulfate.'],
+['insol','Insoluble sulfur',6,'s','Polymeric sulfur for tire and rubber vulcanization; it does not bloom to the rubber surface.'],
+['wsulf','Wettable and dusting sulfur',6,'s','Fungicide and miticide for grapes, fruit and vegetables, approved for organic farming.'],
+['sconc','Sulfur concrete and asphalt',6,'s','Sulfur as binder in acid-resistant concrete and as a bitumen extender.'],
+['sdye','Sulfur dyes',6,'s','Sulfur black and related dyes, made with sodium polysulfide or sulfide; widely used on cotton and denim.'],
+['pyro','Black powder, pyrotechnics',6,'s','Sulfur in black powder, safety fuses, fireworks and matches.'],
+['ligno','Lignosulfonates',6,'by','Recovered from spent sulfite liquor. Concrete plasticizer, feed pellet binder, dust suppressant and micronutrient chelate.'],
+// stage 7 — end markets and sinks
+['crop','Crop nutrition',7,'mkt','Sulfur as a plant nutrient, plus the acid used to unlock phosphate for MAP, DAP and TSP.'],
+['cprot','Crop protection',7,'mkt','Sulfur, copper and dithiocarbamate fungicides, organophosphates, sulfonylureas and fumigants.'],
+['feed','Animal feed',7,'mkt','Methionine, feed phosphates, lysine sulfate, trace-mineral sulfates and pellet binders.'],
+['food','Food and beverage',7,'mkt','Preservatives (sulfites, SO2), sugar processing, food-grade acid and sweeteners.'],
+['mining','Mining and metals',7,'mkt','Copper, zinc, gold and other metal recovery: leaching, flotation reagents and cyanide destruction.'],
+['steel','Steel and stainless',7,'mkt','Coke-oven gas cleaning, pickling, nickel for stainless and HF for stainless pickling.'],
+['alu','Aluminium',7,'mkt','Aluminium fluoride for smelter baths, made from HF.'],
+['batt','Batteries and storage',7,'mkt','Nickel, cobalt and manganese sulfates, LFP precursors, lithium, LiPF6 and lead-acid electrolyte.'],
+['oil','Oil, gas and fuels',7,'mkt','Alkylation, catalyst presulfiding, gas odorants, lubricant additives and oilfield chemicals.'],
+['fluoro','Fluorochemicals',7,'mkt','Refrigerants and fluoropolymers made from HF.'],
+['plastics','Plastics, rubber and resins',7,'mkt','Nylon, PMMA, ABS, polyurethanes, PPS, PVC stabilizers and industrial rubber.'],
+['paints','Paints and coatings',7,'mkt','TiO2 pigment, iron oxide pigments, acrylics and fillers.'],
+['constr','Construction and cement',7,'mkt','Chromate reducer for cement, superplasticizers, lignosulfonate admixtures, sulfur concrete and insulation foams.'],
+['auto','Automotive and tires',7,'mkt','Tire vulcanization, engine oil additives, starter batteries, engineering plastics and magnets.'],
+['textiles','Textiles and apparel',7,'mkt','Viscose, nylon 6, acrylic fibre, sulfur and vat dyes, and dyeing auxiliaries.'],
+['paper','Pulp, paper and packaging',7,'mkt','Kraft and sulfite pulping chemicals, bleaching, sizing and cellophane.'],
+['home','Home and personal care',7,'mkt','Detergent surfactants (LAS, SLES), detergent filler, cleaners and cosmetics.'],
+['water','Water treatment',7,'mkt','Coagulants (alum, ferric and ferrous sulfate), pH control and dechlorination.'],
+['pharmaM','Pharma and healthcare',7,'mkt','Drug synthesis reagents, sulfa drugs and excipients.'],
+['elec','Electronics and semiconductors',7,'mkt','Ultra-pure acid, DMSO, MSA plating, displays and magnets.'],
+['glass','Glass and ceramics',7,'mkt','Sodium sulfate as a refining agent; lithium for glass-ceramics.'],
+['leather','Leather tanning',7,'mkt','Chromium sulfate, sodium sulfide and hydrosulfide, sulfites and pickling acid.'],
+['defense','Explosives and defense',7,'mkt','Nitration acid for explosives and propellants, and black powder.'],
+['power','Power generation',7,'mkt','Uranium for nuclear fuel and rare-earth magnets for wind turbines.'],
+['wres','Residues (not shown)',7,'waste','Leach residues and tailings (gypsum, jarosite, magnesium sulfate), neutralization sludge, sulfate in effluent, stack emissions and process losses. Sulfur fate view only.'],
+['spret','Spent acid returned ↺',7,'by','Spent acid leaving consumers. It re-enters on the left as "Spent acid, recycled", closing the loop. Shown in the by-products view; the demand view counts it against the process that used the acid.']
+],
+links: [
+// sources
+['sg','es',44],
+['rf','es',30],['rf','h2s',0.35],
+['mn','es',2],
+['sm','so2',17],
+['py','so2',6.65],
+['spsrc','sar',4.7],['spsrc','wpa',0.3],['spsrc','ssp',0.3],['spsrc','as',0.3],
+// elemental sulfur
+['es','so2',66.9],['es','h2s',1.0],['es','cs2',0.9],['es','p2s5',0.2],['es','scl',0.15],['es','ats',0.12],['es','kts',0.02],['es','nats',0.01],['es','direct',6.7],
+['sar','so2',4.7],
+// SO2
+['so2','so3',93.32],['so2','nasulf',0.2],['so2','nabis',0.38],['so2','kmbs',0.03],['so2','nh4bis',0.07],['so2','dithio',0.25],['so2','sulfp',0.45],['so2','ats',0.2],['so2','kts',0.03],['so2','nats',0.02],['so2','lso2',0.3],
+['h2s','mesh',0.6],['h2s','nahs',0.45],['h2s','merc',0.3],
+['cs2','visc',0.6],['cs2','xan',0.12],['cs2','dtc',0.18],
+['p2s5','zddp',0.12],['p2s5','dtp',0.08],
+['scl','socl2',0.08],['scl','oil',0.04],['scl','auto',0.03],
+['direct','sfert',4.45],['direct','insol',0.9],['direct','wsulf',0.8],['direct','sconc',0.3],['direct','sdye',0.15],['direct','pyro',0.1],
+// SO3 and reduced-sulfur intermediates
+['so3','acid',91.67],['so3','so3s',1.5],['so3','csa',0.15],
+['mesh','meth',0.38],['mesh','dmds',0.14],['mesh','meshd',0.08],
+['nahs','mining',0.18],['nahs','leather',0.09],['nahs','pps',0.08],['nahs','paper',0.04],['nahs','sdye',0.04],['nahs','water',0.02],
+['merc','oil',0.08],['merc','plastics',0.11],['merc','auto',0.03],['merc','home',0.03],['merc','pharmaM',0.02],['merc','elec',0.03],
+['socl2','pharmaM',0.05],['socl2','cprot',0.02],['socl2','batt',0.01],
+// sulfuric acid
+['acid','wpa',45.5],['acid','ssp',4.5],['acid','as',1.2],['acid','sop',0.9],
+['acid','cu',7.4],['acid','hpal',4.2],['acid','u',0.7],['acid','znh',0.8],['acid','ree',0.4],['acid','li',0.7],['acid','pick',1.0],['acid','bms',0.6],
+['acid','capro',2.9],['acid','hf',1.9],['acid','alky',4.0],['acid','nitr',1.0],['acid','mma',1.0],['acid','an',0.35],['acid','coke',1.1],['acid','tio2',3.6],['acid','clad',0.3],['acid','visc',1.7],['acid','sulfa',0.4],['acid','pulp',1.0],['acid','ph',0.55],['acid','lead',0.6],['acid','egr',0.6],['acid','fine',0.7],['acid','ferm',0.15],['acid','meth',0.15],
+['acid','alum',0.9],['acid','ferric',0.2],['acid','feso4',0.1],['acid','cuso4',0.05],['acid','znso4',0.15],['acid','mgso4',0.15],['acid','mnso4',0.1],['acid','crso4',0.1],['acid','baso4',0.02],
+['so3s','home',1.3],['so3s','oil',0.1],['so3s','cprot',0.05],['so3s','textiles',0.05],
+['csa','pharmaM',0.06],['csa','food',0.03],['csa','home',0.03],['csa','cprot',0.03],
+['dmds','oil',0.09],['dmds','cprot',0.03],['dmds','meth',0.02],
+// consuming processes
+['wpa','wres',43.0,'w'],['wpa','map',2.4],['wpa','feedp',0.2],['wpa','ppa',0.2],
+['ssp','crop',4.8],
+['sop','crop',0.9],
+['cu','wres',7.4,'w'],
+['hpal','wres',4.2,'w'],
+['u','wres',0.7,'w'],
+['znh','wres',0.8,'w'],
+['ree','wres',0.4,'w'],
+['li','na2so4',0.55,'b'],['li','wres',0.15,'w'],
+['pick','feso4',0.7,'b'],['pick','wres',0.3,'w'],
+['bms','niso4',0.3],['bms','coso4',0.05],['bms','mnso4',0.15],['bms','as',0.1,'b'],
+['capro','as',2.9,'b'],
+['hf','wres',1.9,'w'],
+['alky','spret',3.6,'r'],['alky','wres',0.4,'w'],
+['nitr','spret',0.6,'r'],['nitr','wres',0.4,'w'],
+['mma','as',0.25,'b'],['mma','spret',0.5,'r'],['mma','wres',0.25,'w'],
+['an','as',0.35,'b'],
+['coke','as',1.1,'b'],
+['meth','feed',0.4],['meth','as',0.15,'b'],
+['tio2','feso4',1.2,'b'],['tio2','spret',0.4,'r'],['tio2','wres',2.0,'w'],
+['clad','spret',0.3,'r'],
+['visc','na2so4',1.3,'b'],['visc','wres',1.0,'w'],
+['sulfa','constr',0.15],['sulfa','textiles',0.1],['sulfa','water',0.05],['sulfa','spret',0.1,'r'],
+['pulp','na2so4',0.4,'b'],['pulp','paper',0.6],
+['sulfp','paper',0.25],['sulfp','ligno',0.2,'b'],
+['ph','water',0.35],['ph','food',0.12],['ph','leather',0.08],
+['lead','auto',0.35],['lead','batt',0.25],
+['egr','elec',0.6],
+['fine','pharmaM',0.35],['fine','textiles',0.12],['fine','cprot',0.13],['fine','spret',0.1,'r'],
+['ferm','feed',0.15],
+// products and by-products
+['map','crop',2.4],
+['feedp','feed',0.2],
+['ppa','batt',0.08],['ppa','food',0.06],['ppa','home',0.035],['ppa','elec',0.025],
+['as','crop',6.05],['as','water',0.2],['as','food',0.1],
+['feso4','constr',0.6],['feso4','water',0.6],['feso4','paints',0.3],['feso4','crop',0.2],['feso4','feed',0.15],['feso4','wres',0.15,'w'],
+['na2so4','home',0.9],['na2so4','paper',0.55],['na2so4','glass',0.35],['na2so4','textiles',0.3],['na2so4','wres',0.15,'w'],
+['alum','water',0.7],['alum','paper',0.2],
+['ferric','water',0.2],
+['cuso4','cprot',0.03],['cuso4','feed',0.01],['cuso4','mining',0.01],
+['znso4','crop',0.08],['znso4','feed',0.04],['znso4','textiles',0.02],['znso4','mining',0.01],
+['niso4','batt',0.25],['niso4','auto',0.05],
+['coso4','batt',0.05],
+['mnso4','batt',0.13],['mnso4','crop',0.07],['mnso4','feed',0.05],
+['mgso4','crop',0.11],['mgso4','pharmaM',0.02],['mgso4','home',0.02],
+['crso4','leather',0.1],
+['baso4','paints',0.015],['baso4','plastics',0.005],
+['nasulf','paper',0.09],['nasulf','water',0.08],['nasulf','food',0.03],
+['nabis','food',0.1],['nabis','water',0.1],['nabis','mining',0.06],['nabis','leather',0.05],['nabis','textiles',0.04],['nabis','pharmaM',0.03],
+['kmbs','food',0.03],
+['nh4bis','oil',0.05],['nh4bis','paper',0.02],
+['dithio','textiles',0.15],['dithio','paper',0.1],
+['ats','crop',0.32],
+['kts','crop',0.05],
+['nats','water',0.015],['nats','mining',0.01],['nats','pharmaM',0.005],
+['lso2','food',0.1],['lso2','mining',0.08],['lso2','water',0.05],['lso2','oil',0.04],['lso2','paper',0.03],
+['xan','mining',0.12],
+['dtc','cprot',0.09],['dtc','auto',0.08],['dtc','plastics',0.01],
+['zddp','auto',0.09],['zddp','oil',0.03],
+['dtp','cprot',0.05],['dtp','mining',0.03],
+['pps','auto',0.04],['pps','elec',0.03],['pps','plastics',0.01],
+['meshd','cprot',0.04],['meshd','elec',0.02],['meshd','pharmaM',0.02],
+['sfert','crop',4.45],
+['insol','auto',0.75],['insol','plastics',0.15],
+['wsulf','cprot',0.8],
+['sconc','constr',0.3],
+['sdye','textiles',0.19],
+['pyro','defense',0.1],
+['ligno','constr',0.12],['ligno','feed',0.05],['ligno','crop',0.03]
+],
+res: {
+"wpa": "Phosphogypsum, about 5 t per t P2O5, mostly stacked",
+"hf": "Fluorogypsum (anhydrite), about 3.6 t per t HF, mostly stockpiled",
+"cu": "Sulfate salts left in the leach heap",
+"hpal": "Gypsum and magnesium sulfate in tailings",
+"u": "Leach and neutralization residues",
+"znh": "Jarosite, goethite and neutralization gypsum",
+"ree": "Neutralization residues",
+"li": "Gypsum from neutralizing excess acid",
+"pick": "Neutralized pickle liquor",
+"alky": "Spent acid losses, neutralized",
+"nitr": "Neutralized acid losses",
+"mma": "Neutralized residue",
+"tio2": "Neutralization gypsum from weak acid (\"white\" and \"red\" gypsum)",
+"visc": "Sulfate in effluent and CS2/H2S losses",
+"feso4": "Unsold stockpiled copperas",
+"na2so4": "Sulfate in effluent"
+}
+};
+if (typeof module !== 'undefined') module.exports = DATA;
+
+</script>
+<script>
+const EPS = 1e-9;
+const NODES = DATA.nodes.map(([id, name, st, fam, d, o]) => Object.assign({ id, name, st, fam, d, res: (DATA.res || {})[id] }, o || {}));
+const NODE = new Map(NODES.map(n => [n.id, n]));
+const RAW = DATA.links.map(([s, t, v, ty]) => ({ source: s, target: t, v, type: ty || 'f' }));
+
+function sumV(ls) { let s = 0; for (const l of ls) s += l.v; return s; }
+
+// View builder.
+// Both views: sulfur that ends in unsaleable residue (stacked gypsum, tailings,
+// neutralization sludge, effluent) is counted against the product that needed it.
+// Demand view additionally gives saleable by-product and spent-acid sulfur back
+// to the market that drove the consumption.
+function buildView(mode) {
+  const links = RAW.map(l => ({ ...l }));
+  const types = mode === 'demand' ? new Set(['b', 'w', 'r']) : new Set(['w']);
+  const outs = id => links.filter(l => l.source === id && l.v > EPS);
+  const shift = (id, x) => {
+    const o = outs(id); const tot = sumV(o); if (tot <= EPS) return;
+    for (const l of o) { const d = x * l.v / tot; l.v = Math.max(0, l.v + d); shift(l.target, d); }
+  };
+  const getF = (s, t) => {
+    let l = links.find(k => k.source === s && k.target === t && k.type === 'f');
+    if (!l) { l = { source: s, target: t, v: 0, type: 'f', attr: true }; links.push(l); }
+    return l;
+  };
+  for (const L of links.filter(l => types.has(l.type))) {
+    const x = L.v; L.v = 0; if (x <= EPS) continue;
+    const n = NODE.get(L.source);
+    if (n.drv) {
+      for (const [t, sh] of Object.entries(n.drv)) { getF(L.source, t).v += x * sh; shift(t, x * sh); }
+    } else {
+      const fs = links.filter(l => l.source === L.source && l.type === 'f' && l.v > EPS);
+      const tot = sumV(fs);
+      if (tot <= EPS) throw new Error('No driver for ' + L.source);
+      for (const l of fs) { const d = x * l.v / tot; l.v += d; shift(l.target, d); }
+    }
+    if (L.type === 'b') shift(L.target, -x);
+  }
+  return links.filter(l => l.v > 1e-7);
+}
+
+// Chain through one node: upstream flows scaled to the share that reaches it,
+// downstream flows scaled to the share that came from it.
+function chainOf(links, focus) {
+  const ins = new Map(), outs = new Map();
+  for (const l of links) {
+    (ins.get(l.target) || ins.set(l.target, []).get(l.target)).push(l);
+    (outs.get(l.source) || outs.set(l.source, []).get(l.source)).push(l);
+  }
+  const att = new Map();
+  const st = id => NODE.get(id).st;
+  const ids = [...new Set(links.flatMap(l => [l.source, l.target]))];
+  const up = new Map([[focus, sumV(ins.get(focus) || [])]]);
+  for (const id of ids.slice().sort((a, b) => st(b) - st(a))) {
+    if (!up.has(id)) continue;
+    const li = ins.get(id) || []; const tot = sumV(li); if (tot <= EPS) continue;
+    const A = up.get(id);
+    for (const l of li) { const v = l.v * A / tot; att.set(l, (att.get(l) || 0) + v); up.set(l.source, (up.get(l.source) || 0) + v); }
+  }
+  const dn = new Map([[focus, sumV(outs.get(focus) || [])]]);
+  for (const id of ids.slice().sort((a, b) => st(a) - st(b))) {
+    if (!dn.has(id)) continue;
+    const lo = outs.get(id) || []; const tot = sumV(lo); if (tot <= EPS) continue;
+    const A = dn.get(id);
+    for (const l of lo) { const v = l.v * A / tot; att.set(l, (att.get(l) || 0) + v); dn.set(l.target, (dn.get(l.target) || 0) + v); }
+  }
+  return [...att.entries()].filter(([, v]) => v > 1e-9).map(([l, v]) => ({ ...l, v }));
+}
+
+function balance(links) {
+  const inn = new Map(), out = new Map();
+  for (const l of links) { inn.set(l.target, (inn.get(l.target) || 0) + l.v); out.set(l.source, (out.get(l.source) || 0) + l.v); }
+  return { inn, out };
+}
+
+if (typeof module !== 'undefined') module.exports = { NODES, NODE, RAW, buildView, chainOf, balance, sumV };
+
+</script>
+<script>
+const COLS=['Sources','Recovered sulfur','First conversion','Second conversion','Acid and SO3 products','Consuming processes','Products and by-products','End markets'];
+const FAMS={
+  src:{name:'Sources',c:'--f-src'},
+  s:{name:'Elemental sulfur route',c:'--f-s'},
+  ox:{name:'SO2, SO3 and sulfuric acid route',c:'--f-ox'},
+  red:{name:'Reduced sulfur: H2S, CS2, mercaptans',c:'--f-red'},
+  salt:{name:'Sulfate, sulfite and thiosulfate salts',c:'--f-salt'},
+  by:{name:'By-products and spent acid loop',c:'--f-by'},
+  mkt:{name:'End markets',c:'--f-mkt'}
+};
+const TYPE={f:'',b:'by-product',r:'spent acid'};
+// Descriptions without quantities for the linkage-only map.
+const OVR={
+  es:'Traded molten or as prills, granules and lumps. Most is burned to SO2 for sulfuric acid. The rest is used directly or made into H2S, CS2, P2S5, sulfur chlorides and thiosulfates.',
+  sar:'Spent acid is decomposed at high temperature back to SO2, cleaned and converted to fresh acid. Common next to refinery alkylation units and MMA plants.',
+  so2:'Made by burning sulfur, roasting sulfide ores and pyrite, or decomposing spent acid. Nearly all goes on to SO3. The rest becomes sulfites, bisulfites, dithionite, thiosulfates, pulping liquor or liquid SO2.',
+  cs2:'Sulfur vapour reacted with methane. Viscose plants recover and recycle much of their CS2.',
+  acid:'SO3 absorbed in concentrated acid; oleum carries extra dissolved SO3. The hub of the chain: the largest outlet is phosphate fertilizer, followed by metal leaching and chemicals. Includes acid made from regenerated spent acid.',
+  wpa:'Phosphate rock digested with sulfuric acid, giving phosphoric acid and phosphogypsum. The phosphoric acid goes on to MAP, DAP, TSP, feed phosphates and purified acid.',
+  ssp:'Rock phosphate acidulated with sulfuric acid. The gypsum stays in the product, so SSP also delivers sulfur to the crop.',
+  sop:'Potassium chloride reacted with sulfuric acid in Mannheim furnaces, giving potassium sulfate and hydrochloric acid. Chloride-free potash for fruit, vegetables and tobacco. Brine and mineral SOP is outside this map.',
+  hpal:'High-pressure acid leaching of laterite ore, expanding fast in Indonesia. Acid use per tonne of ore is high; the sulfur ends as gypsum and magnesium sulfate in tailings. The MHP product feeds battery-grade nickel sulfate.',
+  capro:'Hydroxylamine sulfate oximation plus oleum in the Beckmann rearrangement, neutralized with ammonia. Essentially all the sulfur leaves as ammonium sulfate; the caprolactam itself goes to nylon 6.',
+  hf:'Fluorspar digested with sulfuric acid in rotary kilns, giving HF and fluorogypsum. HF goes on to refrigerants, fluoropolymers, AlF3, LiPF6 and HF alkylation.',
+  alky:'Acid catalyzes isobutane–olefin alkylation to high-octane alkylate. The acid degrades rather than reacting; most of it returns as spent acid for regeneration.',
+  meth:'MeSH supplies the sulfur atom that stays in the amino acid. The MHA (hydroxy-analogue) route hydrolyzes the nitrile with sulfuric acid and gives ammonium sulfate as a by-product. The hydantoin route used for most DL-methionine does not.',
+  tio2:'Ilmenite or slag digested in concentrated acid. Yields ferrous sulfate (copperas) and weak spent acid, which is reconcentrated or neutralized to gypsum.',
+  clad:'Wet chlorine from chlor-alkali cells is dried with concentrated acid. The diluted acid is sold or reused.',
+  as:'Nitrogen and sulfur fertilizer. Most supply is a by-product of caprolactam, coke ovens, acrylonitrile, MMA, methionine and nickel refining. A smaller share is made by neutralizing acid with ammonia.',
+  ats:'Liquid nitrogen–sulfur fertilizer, often blended with UAN. Made from SO2, ammonia and elemental sulfur.',
+  map:'Granular phosphate fertilizers made from phosphoric acid. They carry little sulfur themselves unless S-enhanced grades add elemental sulfur.',
+  crop:'Sulfur as a plant nutrient, and sulfuric acid as the reagent that unlocks phosphate for MAP, DAP and TSP.',
+  spsrc:'Spent acid collected from alkylation, nitration, MMA, TiO2, chlorine drying and fine chemicals. Most goes to regeneration furnaces (SAR); some is reused directly in fertilizer plants. It is the same acid that leaves through "Spent acid returned" on the right; a left-to-right map cannot draw a loop, so the loop is shown at both ends.',
+  spret:'Spent acid leaving consumers. It re-enters on the left as "Spent acid, recycled", closing the loop.'
+};
+const RESO={wpa:'Phosphogypsum, mostly stacked',hf:'Fluorogypsum (anhydrite), mostly stockpiled'};
+const XO={sop:'Hydrochloric acid'};
+const desc=n=>OVR[n.id]||n.d, resOf=n=>RESO[n.id]||n.res, xOf=n=>XO[n.id]||n.x;
+
+const SVGNS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const state={focus:null,fit:false};
+const ORDER=new Map(DATA.nodes.map((n,i)=>[n[0],i]));
+
+// Union of the two flow views gives every linkage: saleable by-products and the
+// spent acid loop, plus links from processes to the markets their products serve.
+const LINKS=(()=>{
+  const m=new Map();
+  for(const l of buildView('fate'))m.set(l.source+'>'+l.target,{source:l.source,target:l.target,type:l.type});
+  for(const l of buildView('demand')){const k=l.source+'>'+l.target;if(!m.has(k))m.set(k,{source:l.source,target:l.target,type:'f'});}
+  return [...m.values()].filter(l=>NODE.get(l.target).fam!=='waste');
+})();
+
+function col(id){return 'var('+FAMS[NODE.get(id).fam].c+')';}
+function swStyle(id){return NODE.get(id).fam==='by'?'background:var(--panel);border:2px solid var(--f-by)':'background:'+col(id);}
+function linkColor(l){
+  if(l.type==='b'||l.type==='r')return 'var(--f-by)';
+  const s=NODE.get(l.source.id||l.source).fam;
+  if(s==='src'||s==='mkt')return col(l.target.id||l.target);
+  return col(l.source.id||l.source);
+}
+function el(tag,attrs,parent){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function h(tag,attrs,html){const e=document.createElement(tag);if(attrs)for(const k in attrs){if(k==='class')e.className=attrs[k];else e.setAttribute(k,attrs[k]);}if(html!==undefined)e.innerHTML=html;return e;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function nodesOf(links){return [...new Set(links.flatMap(l=>[l.source,l.target]))].sort((a,b)=>ORDER.get(a)-ORDER.get(b));}
+
+/* Column layout with equal-size boxes; vertical order found by barycentre relaxation. */
+function layout(nodeIds,links,o){
+  const nodes=nodeIds.map((id,i)=>({...NODE.get(id),index:i,ins:[],outs:[]}));
+  const byId=new Map(nodes.map(n=>[n.id,n]));
+  const stages=[...new Set(nodes.map(n=>n.st))].sort((a,b)=>a-b);
+  const ci=new Map(stages.map((s,i)=>[s,i]));
+  const L=links.map((l,i)=>({...l,index:i,source:byId.get(l.source),target:byId.get(l.target)}));
+  for(const l of L){l.source.outs.push(l);l.target.ins.push(l);}
+  const columns=stages.map(()=>[]);
+  for(const n of nodes){n.layer=ci.get(n.st);columns[n.layer].push(n);}
+  const nh=o.nh,gap=o.row-o.nh;
+  const maxN=Math.max(...columns.map(c=>c.length));
+  const y0=o.top,y1=o.top+maxN*o.row-gap;
+  const xs=[o.left];for(let i=1;i<stages.length;i++)xs.push(xs[i-1]+o.pitch+(stages[i]===7&&stages[i-1]===6?o.lastGap:0));
+  for(const n of nodes){n.x0=xs[n.layer];n.x1=n.x0+o.dx;}
+  for(const c of columns){const off=(y1-y0-(c.length*o.row-gap))/2;c.forEach((n,i)=>{n.y0=y0+off+i*o.row;n.y1=n.y0+nh;});}
+  const cy=n=>(n.y0+n.y1)/2;
+  const byB=(a,b)=>a.y0-b.y0;
+  const down=(ns,y,i,a)=>{for(;i<ns.length;++i){const n=ns[i],d=(y-n.y0)*a;if(d>1e-6){n.y0+=d;n.y1+=d;}y=n.y1+gap;}};
+  const up=(ns,y,i,a)=>{for(;i>=0;--i){const n=ns[i],d=(n.y1-y)*a;if(d>1e-6){n.y0-=d;n.y1-=d;}y=n.y0-gap;}};
+  const resolve=(ns,a)=>{const i=ns.length>>1,s=ns[i];up(ns,s.y0-gap,i-1,a);down(ns,s.y1+gap,i+1,a);up(ns,y1,ns.length-1,a);down(ns,y0,0,a);};
+  const iters=o.iterations||60;
+  for(let it=0;it<iters;++it){
+    const alpha=Math.pow(0.985,it),beta=Math.max(1-alpha,(it+1)/iters);
+    for(let i=columns.length-2;i>=0;--i){
+      for(const n of columns[i]){let y=0,w=0;for(const l of n.outs){const v=1/(l.target.layer-n.layer);y+=cy(l.target)*v;w+=v;}if(!w)continue;const d=(y/w-cy(n))*alpha;n.y0+=d;n.y1+=d;}
+      columns[i].sort(byB);resolve(columns[i],beta);
+    }
+    for(let i=1;i<columns.length;++i){
+      for(const n of columns[i]){let y=0,w=0;for(const l of n.ins){const v=1/(n.layer-l.source.layer);y+=cy(l.source)*v;w+=v;}if(!w)continue;const d=(y/w-cy(n))*alpha;n.y0+=d;n.y1+=d;}
+      columns[i].sort(byB);resolve(columns[i],beta);
+    }
+  }
+  for(const n of nodes){
+    n.outs.sort((a,b)=>cy(a.target)-cy(b.target)||a.index-b.index);
+    n.ins.sort((a,b)=>cy(a.source)-cy(b.source)||a.index-b.index);
+    n.outs.forEach((l,i)=>{l.y0=n.y0+(i+1)*nh/(n.outs.length+1);});
+    n.ins.forEach((l,i)=>{l.y1=n.y0+(i+1)*nh/(n.ins.length+1);});
+  }
+  return {nodes,links:L,stages,xs,W:xs[xs.length-1]+o.dx+o.right,H:y1+18};
+}
+
+function chainLinks(id){
+  const ins=new Map(),outs=new Map();
+  for(const l of LINKS){(ins.get(l.target)||ins.set(l.target,[]).get(l.target)).push(l);(outs.get(l.source)||outs.set(l.source,[]).get(l.source)).push(l);}
+  const keep=new Set(),seenU=new Set([id]),seenD=new Set([id]);const uq=[id],dq=[id];
+  while(uq.length){const x=uq.pop();for(const l of ins.get(x)||[]){keep.add(l);if(!seenU.has(l.source)){seenU.add(l.source);uq.push(l.source);}}}
+  while(dq.length){const x=dq.pop();for(const l of outs.get(x)||[]){keep.add(l);if(!seenD.has(l.target)){seenD.add(l.target);dq.push(l.target);}}}
+  return LINKS.filter(l=>keep.has(l));
+}
+
+let G=null;
+function draw(){
+  const links=state.focus?chainLinks(state.focus):LINKS;
+  const opts=state.focus?{pitch:190,lastGap:20,dx:10,nh:14,row:26,top:34,left:14,right:235,iterations:70}:{pitch:196,lastGap:24,dx:10,nh:12,row:22,top:34,left:14,right:230,iterations:70};
+  G=layout(nodesOf(links),links,opts);
+  const svg=$('sk');svg.innerHTML='';svg.classList.remove('dim');
+  svg.setAttribute('viewBox',`0 0 ${G.W} ${G.H}`);
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  G.stages.forEach((s,i)=>{const t=el('text',{x:G.xs[i],y:18,class:'colh'},svg);t.textContent=COLS[s];});
+  const gl=el('g',{},svg),gn=el('g',{},svg);
+  for(const l of G.links){
+    const x0=l.source.x1,x1=l.target.x0,xm=(x0+x1)/2;
+    const p=el('path',{d:`M${x0},${l.y0}C${xm},${l.y0} ${xm},${l.y1} ${x1},${l.y1}`,class:'lk'+(l.type==='r'?' dash':'')},gl);
+    p.style.stroke=linkColor(l);p.style.strokeWidth=l.type==='f'?1.3:2.6;
+    l.el=p;
+    p.addEventListener('mouseenter',e=>{showTip(e,l);hl(null,l);});
+    p.addEventListener('mousemove',e=>moveTip(e));
+    p.addEventListener('mouseleave',()=>{hideTip();hl(null);});
+  }
+  for(const n of G.nodes){
+    const g=el('g',{class:'nd',tabindex:0,role:'button','aria-label':n.name},gn);
+    const r=el('rect',{x:n.x0,y:n.y0,width:n.x1-n.x0,height:n.y1-n.y0,rx:2,class:'bar'},g);if(n.fam==='by'){r.style.fill='var(--panel)';r.style.stroke='var(--f-by)';r.style.strokeWidth='2';}else r.style.fill=col(n.id);
+    el('rect',{x:n.x0-3,y:n.y0-4,width:n.x1-n.x0+150,height:n.y1-n.y0+8,fill:'transparent'},g);
+    if(state.focus===n.id)el('rect',{x:n.x0-3,y:n.y0-3,width:n.x1-n.x0+6,height:n.y1-n.y0+6,rx:3,class:'ring'},g);
+    const hub=['es','so2','so3','acid'].includes(n.id)||state.focus===n.id;
+    const t=el('text',{x:n.x1+6,y:(n.y0+n.y1)/2,dy:'0.35em',class:'lbl'+(hub?' hub':'')},g);t.textContent=n.name;
+    n.el=g;
+    g.addEventListener('mouseenter',()=>hl(n));
+    g.addEventListener('mouseleave',()=>hl(null));
+    g.addEventListener('click',()=>select(n.id));
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(n.id);}});
+  }
+}
+
+function trace(n){
+  const ns=new Set([n]),ls=new Set();const uq=[n],dq=[n];
+  while(uq.length){const x=uq.pop();for(const l of x.ins)if(!ls.has(l)){ls.add(l);ns.add(l.source);uq.push(l.source);}}
+  while(dq.length){const x=dq.pop();for(const l of x.outs)if(!ls.has(l)){ls.add(l);ns.add(l.target);dq.push(l.target);}}
+  return {ns,ls};
+}
+function hl(n,link){
+  const svg=$('sk');
+  if(!n&&!link){svg.classList.remove('dim');return;}
+  let ns,ls;
+  if(link){ns=new Set([link.source,link.target]);ls=new Set([link]);}else({ns,ls}=trace(n));
+  svg.classList.add('dim');
+  for(const l of G.links)l.el.classList.toggle('on',ls.has(l));
+  for(const x of G.nodes)x.el.classList.toggle('on',ns.has(x));
+}
+
+const tip=$('tip'),cwrap=$('cwrap');
+function showTip(e,l){const ty=TYPE[l.type];tip.innerHTML=`<div class="t">${esc(l.source.name)} → ${esc(l.target.name)}</div>${ty?`<div class="d">${ty}</div>`:''}`;tip.hidden=false;moveTip(e);}
+function moveTip(e){const r=cwrap.getBoundingClientRect();let x=e.clientX-r.left+cwrap.scrollLeft+14,y=e.clientY-r.top+14;const maxX=cwrap.scrollLeft+cwrap.clientWidth-tip.offsetWidth-8;if(x>maxX)x=e.clientX-r.left+cwrap.scrollLeft-tip.offsetWidth-14;tip.style.left=Math.max(4,x)+'px';tip.style.top=y+'px';}
+function hideTip(){tip.hidden=true;}
+state.fit=true;
+/* Zoom and pan by moving the SVG viewBox. */
+const svgEl=$('sk');let vb=null,base=null,dragged=false;
+function setVB(){svgEl.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);svgEl.classList.toggle('zoomed',vb.w<base.w-0.5);}
+function fitView(){base={x:0,y:0,w:G.W,h:G.H};vb={...base};setVB();}
+function clampVB(){vb.w=Math.min(base.w,Math.max(base.w/10,vb.w));vb.h=vb.w*base.h/base.w;vb.x=Math.min(base.w-vb.w,Math.max(0,vb.x));vb.y=Math.min(base.h-vb.h,Math.max(0,vb.y));}
+function toSvg(cx,cy){const m=svgEl.getScreenCTM();if(!m)return {x:vb.x+vb.w/2,y:vb.y+vb.h/2};const p=new DOMPoint(cx,cy).matrixTransform(m.inverse());return {x:p.x,y:p.y};}
+function zoomAt(f,cx,cy){const p=cx==null?{x:vb.x+vb.w/2,y:vb.y+vb.h/2}:toSvg(cx,cy);const w=Math.min(base.w,Math.max(base.w/10,vb.w*f));const k=w/vb.w;vb.x=p.x-(p.x-vb.x)*k;vb.y=p.y-(p.y-vb.y)*k;vb.w=w;vb.h=w*base.h/base.w;clampVB();setVB();}
+svgEl.addEventListener('wheel',e=>{e.preventDefault();hideTip();const f=Math.exp(e.deltaY*(e.ctrlKey?0.01:0.0015));zoomAt(f,e.clientX,e.clientY);},{passive:false});
+let drag=null;
+svgEl.addEventListener('pointerdown',e=>{if(e.button!==0)return;dragged=false;drag={x:e.clientX,y:e.clientY,vx:vb.x,vy:vb.y,id:e.pointerId};});
+svgEl.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!dragged&&Math.hypot(dx,dy)<5)return;if(!dragged){dragged=true;svgEl.setPointerCapture(e.pointerId);svgEl.classList.add('panning');hideTip();}const m=svgEl.getScreenCTM();const s=m?1/m.a:1;vb.x=drag.vx-dx*s;vb.y=drag.vy-dy*s;clampVB();setVB();});
+const endDrag=e=>{if(!drag)return;drag=null;svgEl.classList.remove('panning');if(dragged)setTimeout(()=>{dragged=false;},0);};
+svgEl.addEventListener('pointerup',endDrag);svgEl.addEventListener('pointercancel',endDrag);
+$('zin').addEventListener('click',()=>zoomAt(1/1.4));
+$('zout').addEventListener('click',()=>zoomAt(1.4));
+$('zfit').addEventListener('click',fitView);
+function redraw(){draw();fitView();}
+function select(id){if(dragged)return;state.focus=id;redraw();$('back').hidden=false;}
+function reset(){if(!state.focus)return;state.focus=null;redraw();$('back').hidden=true;}
+$('back').addEventListener('click',reset);
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' '))return;
+  if(e.key==='Escape'){if(vb.w<base.w-0.5)fitView();else reset();}
+  else if(e.key==='+'||e.key==='=')zoomAt(1/1.4);
+  else if(e.key==='-'||e.key==='_')zoomAt(1.4);
+  else if(e.key==='0')fitView();
+});
+svgEl.addEventListener('click',e=>{if(!dragged&&e.target===svgEl)reset();});
+$('foot').innerHTML=['src','s','ox','red','salt','by'].map(k=>`<span><i class="sw" style="${k==='by'?'background:var(--panel);border:2px solid var(--f-by)':'background:var('+FAMS[k].c+')'}"></i>${k==='src'?'Sources and end markets':FAMS[k].name}</span>`).join('')
+  +'<span><i class="lg-by"></i>Saleable by-product</span><span><i class="lg-dash"></i>Spent acid returned</span><span class="hint">Scroll to zoom · drag to pan · hover to trace · click a step to isolate its chain · Esc to reset</span>';
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(G)hl(null);},100);});
+redraw();
+</script>
+</body>
+</html>
